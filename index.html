@@ -61,8 +61,10 @@
     #home {
       align-items: center;
       justify-content: center;
-      gap: 2rem;
-      padding: 2rem;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      overflow: hidden;
+      width: 100%;
     }
 
     .logo-area {
@@ -786,9 +788,9 @@
   </div>
 
   <button class="btn-primary" id="btn-study">Учить →</button>
-  <div style="display:flex;gap:0.6rem;width:100%;max-width:380px;">
-    <button class="btn-secondary" id="btn-browse" style="flex:1">Все слова</button>
-    <button class="btn-secondary" id="btn-add-word" style="flex:0 0 auto;padding:0.75rem 1.1rem;font-size:1.2rem;" title="Добавить слово">＋</button>
+  <div style="display:flex;gap:0.6rem;width:100%;max-width:380px;box-sizing:border-box;">
+    <button class="btn-secondary" id="btn-browse" style="flex:1;min-width:0;">Все слова</button>
+    <button class="btn-secondary" id="btn-add-word" style="flex-shrink:0;width:3rem;padding:0.75rem 0;font-size:1.3rem;text-align:center;" title="Добавить слово">＋</button>
   </div>
 </div>
 
