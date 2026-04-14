@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ελληνικά">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Ελληνικά — Карточки</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --card-bg: #16213e;
+      --accent: #e8c547;
+      --accent2: #7fb3d3;
+      --text: #f0ead6;
+      --text-muted: #8a8a9a;
+      --border: rgba(232, 197, 71, 0.15);
+      --again: #c0392b;
+      --hard: #e67e22;
+      --good: #27ae60;
+      --easy: #2980b9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'EB Garamond', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(127, 179, 211, 0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(232, 197, 71, 0.06) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ---- SCREENS ---- */
+    .screen { position: fixed; inset: 0; display: flex; flex-direction: column; z-index: 1; }
+    .screen.hidden { display: none; }
+
+    /* ---- HOME ---- */
+    #home {
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+    }
+
+    .logo-area {
+      text-align: center;
+    }
+
+    .logo-greek {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.5rem;
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+
+    .logo-sub {
+      font-size: 1rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 0.5rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 0.5rem;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.25rem;
+    }
+
+    .deck-selector {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .deck-selector select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'EB Garamond', serif;
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    .deck-selector select:focus { outline: 1px solid var(--accent); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0f0f1a;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 1rem 2.5rem;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: transform 0.1s, opacity 0.1s;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      font-family: 'EB Garamond', serif;
+      font-size: 0.95rem;
+      padding: 0.75rem 2rem;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ---- STUDY SCREEN ---- */
+    #study {
+      padding: 0;
+    }
+
+    .study-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      padding-top: calc(1rem + env(safe-area-inset-top));
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .btn-back {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.25rem;
+      line-height: 1;
+    }
+
+    .progress-info {
+      text-align: center;
+    }
+
+    .progress-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .progress-count {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--accent);
+    }
+
+    .deck-badge {
+      font-size: 0.7rem;
+      color: var(--accent2);
+      background: rgba(127, 179, 211, 0.1);
+      border-radius: 20px;
+      padding: 0.2rem 0.6rem;
+      letter-spacing: 0.05em;
+    }
+
+    .progress-bar-wrap {
+      height: 2px;
+      background: rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 0.4s ease;
+    }
+
+    /* ---- CARD AREA ---- */
+    .card-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      overflow: hidden;
+    }
+
+    .flashcard {
+      width: 100%;
+      max-width: 420px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      min-height: 280px;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-inner.flipped { transform: rotateY(180deg); }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      gap: 1rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .card-back { transform: rotateY(180deg); }
+
+    .card-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      position: absolute;
+      top: 1.25rem;
+    }
+
+    .card-word {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
+      text-align: center;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .card-front .card-word { color: var(--accent); }
+
+    .card-hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+    }
+
+    .card-translation {
+      font-size: clamp(1.1rem, 4vw, 1.5rem);
+      color: var(--accent2);
+      text-align: center;
+      font-style: italic;
+    }
+
+    .card-example {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+      margin-top: 0.25rem;
+      width: 100%;
+    }
+
+    .tap-hint {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      position: absolute;
+      bottom: 1.1rem;
+    }
+
+    /* ---- ANSWER BUTTONS ---- */
+    .answer-area {
+      padding: 0 1.5rem 1.5rem;
+      padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+      flex-shrink: 0;
+    }
+
+    .show-btn-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-show {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 14px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      padding: 0.9rem 3rem;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: background 0.2s;
+    }
+
+    .btn-show:active { background: rgba(232, 197, 71, 0.1); }
+
+    .rating-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 0.6rem;
+    }
+
+    .rating-btns.hidden { display: none; }
+
+    .btn-rating {
+      border: none;
+      border-radius: 12px;
+      font-family: 'EB Garamond', serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.8rem 0.4rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      transition: transform 0.1s, opacity 0.15s;
+      line-height: 1.2;
+    }
+
+    .btn-rating:active { transform: scale(0.95); }
+
+    .btn-rating .emoji { font-size: 1.1rem; }
+    .btn-rating .label { font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; }
+    .btn-rating .interval { font-size: 0.6rem; opacity: 0.6; }
+
+    .btn-again { background: rgba(192, 57, 43, 0.2); color: #e74c3c; border: 1px solid rgba(192,57,43,0.3); }
+    .btn-hard  { background: rgba(230, 126, 34, 0.2); color: #e67e22; border: 1px solid rgba(230,126,34,0.3); }
+    .btn-good  { background: rgba(39, 174, 96, 0.2);  color: #2ecc71; border: 1px solid rgba(39,174,96,0.3); }
+    .btn-easy  { background: rgba(41, 128, 185, 0.2); color: #3498db; border: 1px solid rgba(41,128,185,0.3); }
+
+    /* ---- DONE SCREEN ---- */
+    #done {
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .done-icon {
+      font-size: 4rem;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .done-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--accent);
+    }
+
+    .done-sub { color: var(--text-muted); font-size: 1rem; font-style: italic; }
+
+    .done-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .done-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 0.5rem;
+    }
+
+    .done-stat .num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--accent);
+    }
+
+    .done-stat .lbl {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    /* ---- BROWSE SCREEN ---- */
+    #browse {
+      overflow-y: auto;
+    }
+
+    .browse-header {
+      padding: 1.25rem 1.5rem;
+      padding-top: calc(1.25rem + env(safe-area-inset-top));
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .browse-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+
+    .search-box {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'EB Garamond', serif;
+      font-size: 1rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .search-box::placeholder { color: var(--text-muted); }
+    .search-box:focus { outline: 1px solid var(--accent2); }
+
+    .word-list { padding: 0.5rem 0 5rem; }
+
+    .word-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .word-item:active { background: var(--surface); }
+
+    .word-greek {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      color: var(--accent);
+    }
+
+    .word-ru {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: right;
+      max-width: 55%;
+    }
+
+    .word-deck {
+      font-size: 0.65rem;
+      color: var(--accent2);
+      background: rgba(127,179,211,0.08);
+      border-radius: 20px;
+      padding: 0.1rem 0.4rem;
+      margin-top: 0.2rem;
+    }
+
+    /* ---- CARD SLIDE ANIMATION ---- */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .flashcard { animation: slideIn 0.3s ease; }
+
+    /* ---- LOGIN SCREEN ---- */
+    #login {
+      align-items: center;
+      justify-content: center;
+      gap: 1.75rem;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .login-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 4rem;
+      color: var(--accent);
+    }
+
+    .login-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--text);
+    }
+
+    .login-sub {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-msg {
+      font-size: 0.85rem;
+      text-align: center;
+      min-height: 1.2rem;
+      font-style: italic;
+    }
+
+    .login-msg.success { color: var(--good); }
+    .login-msg.error { color: #e74c3c; }
+
+    /* sync indicator */
+    .sync-badge {
+      position: fixed;
+      bottom: calc(1rem + env(safe-area-inset-bottom));
+      right: 1rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.25rem 0.6rem;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .sync-badge.visible { opacity: 1; }
+
+    /* user bar on home */
+    .user-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 380px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .btn-signout {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-decoration: underline;
+      font-family: 'EB Garamond', serif;
+    }
+
+    .btn-signout:hover { color: var(--text); }
+
+    /* ---- DIRECTION TOGGLE ---- */
+    .dir-toggle {
+      display: flex;
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .dir-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'EB Garamond', serif;
+      font-size: 0.82rem;
+      padding: 0.65rem 0.4rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .dir-btn.active {
+      background: rgba(232, 197, 71, 0.12);
+      color: var(--accent);
+    }
+
+    .dir-btn + .dir-btn { border-left: 1px solid var(--border); }
+
+    /* ---- ADD WORD FORM ---- */
+    .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .field-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .field-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'EB Garamond', serif;
+      font-size: 1.1rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+
+    .field-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .field-input::placeholder { color: var(--text-muted); }
+
+    /* custom word delete btn */
+    .word-item .btn-delete {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0.25rem 0.4rem;
+      border-radius: 6px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
+    }
+    .word-item .btn-delete:hover { color: #e74c3c; background: rgba(231,76,60,0.1); }
+
+    .word-item .btn-edit {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.25rem 0.4rem;
+      border-radius: 6px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
+    }
+    .word-item .btn-edit:hover { color: var(--accent2); background: rgba(127,179,211,0.1); }
+
+    .word-actions { display: flex; gap: 0.1rem; align-items: center; }
+
+    /* ---- SCROLLBAR ---- */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="screen" id="login">
+  <div class="login-logo">Ελ</div>
+  <div>
+    <div class="login-title">Ελληνικά Карточки</div>
+    <div class="login-sub">Введите email — мы пришлём<br>ссылку для входа</div>
+  </div>
+  <div class="login-form">
+    <input class="field-input" id="login-email" type="email" placeholder="your@email.com" autocomplete="email">
+    <button class="btn-primary" id="btn-send-link">Отправить ссылку →</button>
+    <div class="login-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="screen hidden" id="home">
+  <div class="logo-area">
+    <div class="logo-greek">Ελληνικά</div>
+    <div class="logo-sub">карточки для повторения</div>
+  </div>
+
+  <div class="user-bar">
+    <span id="user-email"></span>
+    <button class="btn-signout" id="btn-signout">выйти</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-due">0</div>
+      <div class="stat-label">сегодня</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-new">0</div>
+      <div class="stat-label">новых</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-total">0</div>
+      <div class="stat-label">всего</div>
+    </div>
+  </div>
+
+  <div class="deck-selector">
+    <select id="deck-select">
+      <option value="all">Все уроки</option>
+      <option value="custom">⭐ Мои слова</option>
+      <option value="greetings">Приветствия и фразы</option>
+      <option value="nouns">Существительные</option>
+      <option value="verbs">Глаголы</option>
+      <option value="numbers">Числа</option>
+      <option value="food">Еда и напитки</option>
+      <option value="places">Места</option>
+      <option value="phrases">Полезные фразы</option>
+    </select>
+  </div>
+
+  <div class="dir-toggle">
+    <button class="dir-btn active" data-dir="gr">🇬🇷 Греческий<br><small>→ угадать перевод</small></button>
+    <button class="dir-btn" data-dir="ru">🇷🇺 Русский<br><small>→ вспомнить слово</small></button>
+    <button class="dir-btn" data-dir="mix">🔀 Оба<br><small>→ случайно</small></button>
+  </div>
+
+  <button class="btn-primary" id="btn-study">Учить →</button>
+  <div style="display:flex;gap:0.6rem;width:100%;max-width:380px;">
+    <button class="btn-secondary" id="btn-browse" style="flex:1">Все слова</button>
+    <button class="btn-secondary" id="btn-add-word" style="flex:0 0 auto;padding:0.75rem 1.1rem;font-size:1.2rem;" title="Добавить слово">＋</button>
+  </div>
+</div>
+
+<!-- STUDY -->
+<div class="screen hidden" id="study">
+  <div class="study-header">
+    <button class="btn-back" id="btn-back">←</button>
+    <div class="progress-info">
+      <div class="progress-label">прогресс</div>
+      <div class="progress-count" id="progress-count">0 / 0</div>
+    </div>
+    <div class="deck-badge" id="current-deck-label">Все</div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div class="card-area">
+    <div class="flashcard" id="flashcard">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front">
+          <span class="card-tag" id="front-tag">греческий</span>
+          <div class="card-word" id="front-word"></div>
+          <div class="card-hint" id="front-hint"></div>
+          <span class="tap-hint">нажмите, чтобы перевернуть</span>
+        </div>
+        <div class="card-face card-back">
+          <span class="card-tag" id="back-tag">перевод</span>
+          <div class="card-word" id="back-word"></div>
+          <div class="card-translation" id="back-translation"></div>
+          <div class="card-example" id="back-example"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="answer-area">
+    <div class="show-btn-wrap" id="show-btn-wrap">
+      <button class="btn-show" id="btn-show">Показать ответ</button>
+    </div>
+    <div class="rating-btns hidden" id="rating-btns">
+      <button class="btn-rating btn-again" data-rating="1">
+        <span class="emoji">😰</span>
+        <span class="label">Снова</span>
+        <span class="interval" id="int-1"></span>
+      </button>
+      <button class="btn-rating btn-hard" data-rating="2">
+        <span class="emoji">😓</span>
+        <span class="label">Сложно</span>
+        <span class="interval" id="int-2"></span>
+      </button>
+      <button class="btn-rating btn-good" data-rating="3">
+        <span class="emoji">🙂</span>
+        <span class="label">Хорошо</span>
+        <span class="interval" id="int-3"></span>
+      </button>
+      <button class="btn-rating btn-easy" data-rating="4">
+        <span class="emoji">😄</span>
+        <span class="label">Легко</span>
+        <span class="interval" id="int-4"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DONE -->
+<div class="screen hidden" id="done">
+  <div class="done-icon">🎉</div>
+  <div class="done-title">Молодец!</div>
+  <div class="done-sub">Все карточки на сегодня повторены</div>
+  <div class="done-stats">
+    <div class="done-stat">
+      <div class="num" id="done-reviewed">0</div>
+      <div class="lbl">повторено</div>
+    </div>
+    <div class="done-stat">
+      <div class="num" id="done-correct">0</div>
+      <div class="lbl">правильно</div>
+    </div>
+    <div class="done-stat">
+      <div class="num" id="done-pct">0%</div>
+      <div class="lbl">точность</div>
+    </div>
+  </div>
+  <button class="btn-primary" id="btn-done-home">На главную</button>
+</div>
+
+<!-- BROWSE -->
+<div class="screen hidden" id="browse">
+  <div class="browse-header">
+    <button class="btn-back" id="btn-browse-back">←</button>
+    <h2>Все слова</h2>
+    <input class="search-box" id="search-input" placeholder="поиск..." type="text">
+  </div>
+  <div class="word-list" id="word-list"></div>
+</div>
+
+<!-- ADD WORD -->
+<div class="screen hidden" id="add-word">
+  <div class="browse-header">
+    <button class="btn-back" id="btn-add-back">←</button>
+    <h2 id="add-screen-title">Новое слово</h2>
+    <div style="width:2rem"></div>
+  </div>
+  <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex:1;">
+
+    <div class="field-group">
+      <label class="field-label">По-гречески *</label>
+      <input class="field-input" id="input-greek" type="text" placeholder="π.χ. καλημέρα" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">По-русски *</label>
+      <input class="field-input" id="input-russian" type="text" placeholder="напр. доброе утро" autocomplete="off">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Подсказка <span style="opacity:0.5">(необязательно)</span></label>
+      <input class="field-input" id="input-hint" type="text" placeholder="напр. εγώ θέλω" autocomplete="off" autocorrect="off">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Тема</label>
+      <select class="field-input" id="input-deck">
+        <option value="custom">Мои слова</option>
+        <option value="greetings">Приветствия</option>
+        <option value="nouns">Существительные</option>
+        <option value="verbs">Глаголы</option>
+        <option value="numbers">Числа</option>
+        <option value="food">Еда и напитки</option>
+        <option value="places">Места</option>
+        <option value="phrases">Фразы</option>
+      </select>
+    </div>
+
+    <div id="add-error" style="color:#e74c3c;font-size:0.85rem;display:none;"></div>
+
+    <button class="btn-primary" id="btn-save-word" style="margin-top:0.5rem">Сохранить</button>
+    <button class="btn-secondary" id="btn-cancel-add">Отмена</button>
+  </div>
+</div>
+
+<div class="sync-badge" id="sync-badge">↑ синхронизация...</div>
+
+<script>
+// ============================================================
+// VOCABULARY — extracted from Sasha's Ελληνικά Τώρα 1+1
+// Format: { greek, russian, hint?, example?, deck }
+// ============================================================
+const CARDS = [
+  // GREETINGS & PHRASES
+  { greek: 'Καλημέρα', russian: 'Доброе утро / Добрый день', deck: 'greetings' },
+  { greek: 'Καλησπέρα', russian: 'Добрый вечер', deck: 'greetings' },
+  { greek: 'Καληνύχτα', russian: 'Спокойной ночи', deck: 'greetings' },
+  { greek: 'Γεια σου', russian: 'Привет / Пока (неформально)', deck: 'greetings' },
+  { greek: 'Γεια σας', russian: 'Здравствуйте / До свидания (формально)', deck: 'greetings' },
+  { greek: 'Καλώς όρισες!', russian: 'Добро пожаловать!', deck: 'greetings' },
+  { greek: 'Τι κάνεις;', russian: 'Как дела?', deck: 'greetings' },
+  { greek: 'Πώς είσαι;', russian: 'Как ты?', deck: 'greetings' },
+  { greek: 'Καλά, ευχαριστώ', russian: 'Хорошо, спасибо', deck: 'greetings' },
+  { greek: 'Μια χαρά', russian: 'Отлично / Прекрасно', deck: 'greetings' },
+  { greek: 'Θαύμα!', russian: 'Замечательно! Чудесно!', deck: 'greetings' },
+  { greek: 'Χαίρω πολύ', russian: 'Очень приятно (при знакомстве)', deck: 'greetings' },
+  { greek: 'Παρακαλώ', russian: 'Пожалуйста / Не за что', deck: 'greetings' },
+  { greek: 'Ευχαριστώ', russian: 'Спасибо', deck: 'greetings' },
+  { greek: 'Ευχαριστώ πολύ', russian: 'Большое спасибо', deck: 'greetings' },
+  { greek: 'Συγγνώμη', russian: 'Извините / Прошу прощения', deck: 'greetings' },
+  { greek: 'Μήπως ξέρετε;', russian: 'Вы не знаете, случайно?', deck: 'greetings' },
+  { greek: 'Βεβαίως', russian: 'Конечно', deck: 'greetings' },
+  { greek: 'Εντάξει', russian: 'Хорошо / Ладно / Окей', deck: 'greetings' },
+  { greek: 'Λοιπόν', russian: 'Ну / Итак', deck: 'greetings' },
+  { greek: 'Πω, πω!', russian: 'Ой-ой! (восклицание удивления)', deck: 'greetings' },
+  { greek: 'Μπράβο!', russian: 'Браво! Молодец!', deck: 'greetings' },
+
+  // USEFUL PHRASES
+  { greek: 'Πώς σε λένε;', russian: 'Как тебя зовут?', deck: 'phrases' },
+  { greek: 'Με λένε...', russian: 'Меня зовут...', deck: 'phrases' },
+  { greek: 'Από πού είσαι;', russian: 'Откуда ты?', deck: 'phrases' },
+  { greek: 'Είμαι από...', russian: 'Я из...', deck: 'phrases' },
+  { greek: 'Πού μένεις;', russian: 'Где ты живёшь?', deck: 'phrases' },
+  { greek: 'Μένω στην/στο...', russian: 'Я живу в...', deck: 'phrases' },
+  { greek: 'Πού είναι;', russian: 'Где находится?', deck: 'phrases' },
+  { greek: 'Ξέρεις ελληνικά;', russian: 'Ты знаешь греческий?', deck: 'phrases' },
+  { greek: 'Λίγο', russian: 'Немного', deck: 'phrases' },
+  { greek: 'Έτσι κι έτσι', russian: 'Так себе', deck: 'phrases' },
+  { greek: 'Δεν ξέρω', russian: 'Я не знаю', deck: 'phrases' },
+  { greek: 'Δεν καταλαβαίνω', russian: 'Я не понимаю', deck: 'phrases' },
+  { greek: 'Πόσο κάνει;', russian: 'Сколько стоит?', deck: 'phrases' },
+  { greek: 'Κάνει...', russian: 'Стоит...', deck: 'phrases' },
+  { greek: 'Τι ώρα είναι;', russian: 'Который час?', deck: 'phrases' },
+  { greek: 'Πόσον καιρό είσαι εδώ;', russian: 'Сколько времени ты здесь?', deck: 'phrases' },
+  { greek: 'Είναι εδώ;', russian: 'Он/она здесь?', deck: 'phrases' },
+  { greek: 'Ναι', russian: 'Да', deck: 'phrases' },
+  { greek: 'Όχι', russian: 'Нет', deck: 'phrases' },
+  { greek: 'Εκεί, δεξιά', russian: 'Там, направо', deck: 'phrases' },
+  { greek: 'Εκεί, αριστερά', russian: 'Там, налево', deck: 'phrases' },
+  { greek: 'Ορίστε', russian: 'Пожалуйста (подаю что-то) / Да? (по телефону)', deck: 'phrases' },
+
+  // VERBS
+  { greek: 'είμαι', russian: 'быть (я есть)', hint: 'εγώ είμαι', deck: 'verbs' },
+  { greek: 'είσαι', russian: 'быть (ты есть)', hint: 'εσύ είσαι', deck: 'verbs' },
+  { greek: 'είναι', russian: 'быть (он/она/оно есть)', hint: 'αυτός/αυτή/αυτό είναι', deck: 'verbs' },
+  { greek: 'είμαστε', russian: 'быть (мы есть)', hint: 'εμείς είμαστε', deck: 'verbs' },
+  { greek: 'είστε / είσαστε', russian: 'быть (вы есть)', hint: 'εσείς', deck: 'verbs' },
+  { greek: 'δεν είμαι', russian: 'я не есть (отрицание)', deck: 'verbs' },
+  { greek: 'θέλω', russian: 'я хочу', hint: 'εγώ θέλω', deck: 'verbs' },
+  { greek: 'θέλεις', russian: 'ты хочешь', deck: 'verbs' },
+  { greek: 'θέλει', russian: 'он/она хочет', deck: 'verbs' },
+  { greek: 'θέλουμε', russian: 'мы хотим', deck: 'verbs' },
+  { greek: 'θέλουν', russian: 'они хотят', deck: 'verbs' },
+  { greek: 'μένω', russian: 'жить / оставаться (я)', deck: 'verbs' },
+  { greek: 'μένεις', russian: 'жить / оставаться (ты)', deck: 'verbs' },
+  { greek: 'ξέρω', russian: 'я знаю', deck: 'verbs' },
+  { greek: 'ξέρεις', russian: 'ты знаешь', deck: 'verbs' },
+  { greek: 'καταλαβαίνω', russian: 'я понимаю', deck: 'verbs' },
+  { greek: 'καταλαβαίνεις', russian: 'ты понимаешь', deck: 'verbs' },
+  { greek: 'μαθαίνω', russian: 'я учу / учусь', deck: 'verbs' },
+  { greek: 'έχω', russian: 'я имею / у меня есть', deck: 'verbs' },
+  { greek: 'έχεις', russian: 'у тебя есть', deck: 'verbs' },
+  { greek: 'έχει', russian: 'у него/неё есть', deck: 'verbs' },
+  { greek: 'δουλεύω', russian: 'я работаю', deck: 'verbs' },
+  { greek: 'πηγαίνω', russian: 'я иду', deck: 'verbs' },
+  { greek: 'περιμένω', russian: 'я жду', deck: 'verbs' },
+  { greek: 'αρέσει', russian: 'нравится', hint: 'μου αρέσει = мне нравится', deck: 'verbs' },
+  { greek: 'μου αρέσει', russian: 'мне нравится', deck: 'verbs' },
+  { greek: 'σου αρέσει;', russian: 'тебе нравится?', deck: 'verbs' },
+
+  // NOUNS — People & Family
+  { greek: 'ο άνθρωπος', russian: 'человек (муж.)', deck: 'nouns' },
+  { greek: 'ο άντρας', russian: 'мужчина / муж', deck: 'nouns' },
+  { greek: 'η γυναίκα', russian: 'женщина / жена', deck: 'nouns' },
+  { greek: 'το παιδί', russian: 'ребёнок', deck: 'nouns' },
+  { greek: 'ο πατέρας', russian: 'отец', deck: 'nouns' },
+  { greek: 'η μητέρα', russian: 'мать', deck: 'nouns' },
+  { greek: 'ο αδερφός', russian: 'брат', deck: 'nouns' },
+  { greek: 'η αδερφή', russian: 'сестра', deck: 'nouns' },
+  { greek: 'ο φίλος', russian: 'друг (муж.)', deck: 'nouns' },
+  { greek: 'η φίλη', russian: 'подруга (жен.)', deck: 'nouns' },
+  { greek: 'ο μαθητής', russian: 'ученик', deck: 'nouns' },
+  { greek: 'η μαθήτρια', russian: 'ученица', deck: 'nouns' },
+  { greek: 'ο φοιτητής', russian: 'студент', deck: 'nouns' },
+  { greek: 'ο καθηγητής', russian: 'преподаватель (муж.)', deck: 'nouns' },
+  { greek: 'η καθηγήτρια', russian: 'преподаватель (жен.)', deck: 'nouns' },
+  { greek: 'ο δάσκαλος', russian: 'учитель (муж.)', deck: 'nouns' },
+  { greek: 'η δασκάλα', russian: 'учительница', deck: 'nouns' },
+  { greek: 'ο Έλληνας', russian: 'грек (муж.)', deck: 'nouns' },
+  { greek: 'η Ελληνίδα', russian: 'гречанка (жен.)', deck: 'nouns' },
+  { greek: 'ο ξένος', russian: 'иностранец', deck: 'nouns' },
+  { greek: 'ο κύριος', russian: 'господин', deck: 'nouns' },
+  { greek: 'η κυρία', russian: 'госпожа', deck: 'nouns' },
+
+  // NOUNS — Places
+  { greek: 'το αεροδρόμιο', russian: 'аэропорт', deck: 'places' },
+  { greek: 'το αεροπλάνο', russian: 'самолёт', deck: 'places' },
+  { greek: 'το σπίτι', russian: 'дом / квартира', deck: 'places' },
+  { greek: 'το σχολείο', russian: 'школа', deck: 'places' },
+  { greek: 'το φαρμακείο', russian: 'аптека', deck: 'places' },
+  { greek: 'το μουσείο', russian: 'музей', deck: 'places' },
+  { greek: 'το ξενοδοχείο', russian: 'гостиница / отель', deck: 'places' },
+  { greek: 'το καφενείο', russian: 'кофейня / кафе', deck: 'places' },
+  { greek: 'η τράπεζα', russian: 'банк', deck: 'places' },
+  { greek: 'η ταβέρνα', russian: 'таверна / ресторан', deck: 'places' },
+  { greek: 'το θέατρο', russian: 'театр', deck: 'places' },
+  { greek: 'η στάση', russian: 'остановка', deck: 'places' },
+  { greek: 'το περίπτερο', russian: 'киоск', deck: 'places' },
+  { greek: 'το ταχυδρομείο', russian: 'почта', deck: 'places' },
+  { greek: 'το νοσοκομείο', russian: 'больница', deck: 'places' },
+  { greek: 'η εκκλησία', russian: 'церковь', deck: 'places' },
+  { greek: 'η πλατεία', russian: 'площадь', deck: 'places' },
+  { greek: 'το Σύνταγμα', russian: 'Синтагма (площадь в Афинах)', deck: 'places' },
+  { greek: 'το μαγαζί', russian: 'магазин', deck: 'places' },
+  { greek: 'το πανεπιστήμιο', russian: 'университет', deck: 'places' },
+
+  // FOOD & DRINKS
+  { greek: 'ο καφές', russian: 'кофе', deck: 'food' },
+  { greek: 'το νερό', russian: 'вода', deck: 'food' },
+  { greek: 'το κρασί', russian: 'вино', deck: 'food' },
+  { greek: 'η μπίρα', russian: 'пиво', deck: 'food' },
+  { greek: 'το ούζο', russian: 'узо (греческий анис)', deck: 'food' },
+  { greek: 'ο χυμός', russian: 'сок', deck: 'food' },
+  { greek: 'η πορτοκαλάδα', russian: 'апельсиновый сок / Фанта', deck: 'food' },
+  { greek: 'η λεμονάδα', russian: 'лимонад', deck: 'food' },
+  { greek: 'το γάλα', russian: 'молоко', deck: 'food' },
+  { greek: 'το τσάι', russian: 'чай', deck: 'food' },
+  { greek: 'το γιαούρτι', russian: 'йогурт', deck: 'food' },
+  { greek: 'το παγωτό', russian: 'мороженое', deck: 'food' },
+  { greek: 'η σαλάτα', russian: 'салат', deck: 'food' },
+  { greek: 'το σουβλάκι', russian: 'шашлык / сувлаки', deck: 'food' },
+  { greek: 'το ψωμί', russian: 'хлеб', deck: 'food' },
+  { greek: 'η τυρόπιτα', russian: 'пирог с сыром', deck: 'food' },
+  { greek: 'η σπανακόπιτα', russian: 'пирог со шпинатом', deck: 'food' },
+  { greek: 'το κοτόπουλο', russian: 'курица / цыплёнок', deck: 'food' },
+  { greek: 'η πίτσα', russian: 'пицца', deck: 'food' },
+  { greek: 'ο γύρος', russian: 'гирос (греческий донер)', deck: 'food' },
+  { greek: 'το τζατζίκι', russian: 'дзадзики (соус)', deck: 'food' },
+  { greek: 'η σοκολάτα', russian: 'шоколад', deck: 'food' },
+  { greek: 'ο λογαριασμός', russian: 'счёт (в ресторане)', deck: 'food' },
+
+  // NUMBERS
+  { greek: 'ένα / μία / ένας', russian: 'один / одна / один', deck: 'numbers' },
+  { greek: 'δύο', russian: 'два', deck: 'numbers' },
+  { greek: 'τρία', russian: 'три', deck: 'numbers' },
+  { greek: 'τέσσερα', russian: 'четыре', deck: 'numbers' },
+  { greek: 'πέντε', russian: 'пять', deck: 'numbers' },
+  { greek: 'έξι', russian: 'шесть', deck: 'numbers' },
+  { greek: 'επτά / εφτά', russian: 'семь', deck: 'numbers' },
+  { greek: 'οκτώ / οχτώ', russian: 'восемь', deck: 'numbers' },
+  { greek: 'εννέα / εννιά', russian: 'девять', deck: 'numbers' },
+  { greek: 'δέκα', russian: 'десять', deck: 'numbers' },
+  { greek: 'έντεκα', russian: 'одиннадцать', deck: 'numbers' },
+  { greek: 'δώδεκα', russian: 'двенадцать', deck: 'numbers' },
+  { greek: 'είκοσι', russian: 'двадцать', deck: 'numbers' },
+  { greek: 'τριάντα', russian: 'тридцать', deck: 'numbers' },
+  { greek: 'σαράντα', russian: 'сорок', deck: 'numbers' },
+  { greek: 'πενήντα', russian: 'пятьдесят', deck: 'numbers' },
+  { greek: 'εξήντα', russian: 'шестьдесят', deck: 'numbers' },
+  { greek: 'εβδομήντα', russian: 'семьдесят', deck: 'numbers' },
+  { greek: 'ογδόντα', russian: 'восемьдесят', deck: 'numbers' },
+  { greek: 'ενενήντα', russian: 'девяносто', deck: 'numbers' },
+  { greek: 'εκατό', russian: 'сто', deck: 'numbers' },
+  { greek: 'χίλια', russian: 'тысяча', deck: 'numbers' },
+
+  // EXTRA NOUNS
+  { greek: 'το βιβλίο', russian: 'книга', deck: 'nouns' },
+  { greek: 'το τετράδιο', russian: 'тетрадь', deck: 'nouns' },
+  { greek: 'το μολύβι', russian: 'карандаш', deck: 'nouns' },
+  { greek: 'ο χάρτης', russian: 'карта / географическая карта', deck: 'nouns' },
+  { greek: 'το τηλέφωνο', russian: 'телефон', deck: 'nouns' },
+  { greek: 'το ταξί', russian: 'такси', deck: 'nouns' },
+  { greek: 'το λεωφορείο', russian: 'автобус', deck: 'nouns' },
+  { greek: 'το τραπέζι', russian: 'стол', deck: 'nouns' },
+  { greek: 'η καρέκλα', russian: 'стул', deck: 'nouns' },
+  { greek: 'η ζάχαρη', russian: 'сахар', deck: 'nouns' },
+  { greek: 'το πρόβλημα', russian: 'проблема', deck: 'nouns' },
+  { greek: 'η χώρα', russian: 'страна', deck: 'nouns' },
+  { greek: 'η γάτα', russian: 'кошка', deck: 'nouns' },
+  { greek: 'ο ύπνος', russian: 'сон', deck: 'nouns' },
+  { greek: 'η μουσική', russian: 'музыка', deck: 'nouns' },
+  { greek: 'ο χορός', russian: 'танец', deck: 'nouns' },
+  { greek: 'η ώρα', russian: 'час / время', deck: 'nouns' },
+  { greek: 'η μέρα', russian: 'день', deck: 'nouns' },
+  { greek: 'η εβδομάδα', russian: 'неделя', deck: 'nouns' },
+  { greek: 'ο μήνας', russian: 'месяц', deck: 'nouns' },
+  { greek: 'ο χρόνος', russian: 'год', deck: 'nouns' },
+  { greek: 'το διαβατήριο', russian: 'паспорт', deck: 'nouns' },
+  { greek: 'το μάθημα', russian: 'урок / занятие', deck: 'nouns' },
+
+  // ADJECTIVES
+  { greek: 'καλός / καλή / καλό', russian: 'хороший / хорошая / хорошее', deck: 'nouns' },
+  { greek: 'μεγάλος / μεγάλη / μεγάλο', russian: 'большой', deck: 'nouns' },
+  { greek: 'μικρός / μικρή / μικρό', russian: 'маленький', deck: 'nouns' },
+  { greek: 'όμορφος / όμορφη / όμορφο', russian: 'красивый', deck: 'nouns' },
+  { greek: 'ακριβός / ακριβή / ακριβό', russian: 'дорогой', deck: 'nouns' },
+  { greek: 'φτηνός / φτηνή / φτηνό', russian: 'дешёвый', deck: 'nouns' },
+  { greek: 'έτοιμος / έτοιμη / έτοιμο', russian: 'готовый', deck: 'nouns' },
+  { greek: 'ελεύθερος / ελεύθερη / ελεύθερο', russian: 'свободный / холостой', deck: 'nouns' },
+  { greek: 'παντρεμένος / παντρεμένη', russian: 'женатый / замужняя', deck: 'nouns' },
+
+  // PREPOSITIONS & PARTICLES
+  { greek: 'στον / στην / στο', russian: 'в, к, на (место)', hint: 'σε + τον/την/το', deck: 'phrases' },
+  { greek: 'από', russian: 'из, от', deck: 'phrases' },
+  { greek: 'για', russian: 'для, за', deck: 'phrases' },
+  { greek: 'με', russian: 'с (вместе)', deck: 'phrases' },
+  { greek: 'εδώ', russian: 'здесь', deck: 'phrases' },
+  { greek: 'εκεί', russian: 'там', deck: 'phrases' },
+  { greek: 'τώρα', russian: 'сейчас', deck: 'phrases' },
+  { greek: 'σήμερα', russian: 'сегодня', deck: 'phrases' },
+  { greek: 'κοντά', russian: 'рядом, близко', deck: 'phrases' },
+  { greek: 'μακριά', russian: 'далеко', deck: 'phrases' },
+  { greek: 'πολύ', russian: 'очень / много', deck: 'phrases' },
+  { greek: 'δεν', russian: 'не (отрицание)', deck: 'phrases' },
+  { greek: 'και', russian: 'и', deck: 'phrases' },
+  { greek: 'ή', russian: 'или', deck: 'phrases' },
+  { greek: 'αλλά', russian: 'но', deck: 'phrases' },
+];
+
+// ============================================================
+// CUSTOM WORDS — saved by the user, stored in localStorage
+// ============================================================
+const CustomWords = {
+  key: 'greek_custom_words_v1',
+  editingId: null,
+
+  load() {
+    try { return JSON.parse(localStorage.getItem(this.key)) || []; }
+    catch { return []; }
+  },
+
+  save(words) {
+    try { localStorage.setItem(this.key, JSON.stringify(words)); }
+    catch {}
+  },
+
+  add(word) {
+    const words = this.load();
+    word.id = Date.now() + Math.random();
+    word.custom = true;
+    words.push(word);
+    this.save(words);
+    return word;
+  },
+
+  update(id, word) {
+    const words = this.load();
+    const idx = words.findIndex(w => w.id === id);
+    if (idx !== -1) { words[idx] = { ...words[idx], ...word }; this.save(words); }
+  },
+
+  remove(id) {
+    const words = this.load().filter(w => w.id !== id);
+    this.save(words);
+    // Also clear SRS state for this card
+    const srsData = Store.load();
+    delete srsData['custom_' + id];
+    Store.save(srsData);
+  },
+
+  getAll() { return this.load(); }
+};
+
+// Combined card list (built-ins + custom)
+function getAllCards() {
+  return [...CARDS, ...CustomWords.getAll()];
+}
+
+// Get stable index for a card (custom cards use 'custom_' prefix)
+function cardKey(card, builtinIndex) {
+  if (card.custom) return 'custom_' + card.id;
+  return String(builtinIndex);
+}
+// ============================================================
+const SM2 = {
+  calculate(card, quality) {
+    // quality: 1=again, 2=hard, 3=good, 4=easy
+    let { interval = 0, repetitions = 0, efactor = 2.5, due = Date.now() } = card;
+    
+    if (quality === 1) { // Again
+      repetitions = 0;
+      interval = 1;
+    } else {
+      if (repetitions === 0) interval = 1;
+      else if (repetitions === 1) interval = 6;
+      else interval = Math.round(interval * efactor);
+      
+      if (quality === 2) interval = Math.max(1, Math.round(interval * 0.8));
+      if (quality === 4) interval = Math.round(interval * 1.3);
+      
+      repetitions++;
+      const qMapped = quality === 2 ? 3 : quality === 3 ? 4 : 5;
+      efactor = Math.max(1.3, efactor + 0.1 - (5 - qMapped) * (0.08 + (5 - qMapped) * 0.02));
+    }
+    
+    due = Date.now() + interval * 86400000;
+    return { interval, repetitions, efactor, due };
+  },
+
+  formatInterval(interval) {
+    if (interval === 0) return '< 1 мин';
+    if (interval === 1) return '1 день';
+    if (interval < 7) return interval + ' дн.';
+    if (interval < 30) return Math.round(interval / 7) + ' нед.';
+    return Math.round(interval / 30) + ' мес.';
+  }
+};
+
+// ============================================================
+// STORAGE
+// ============================================================
+const Store = {
+  key: 'greek_srs_v2',
+  
+  load() {
+    try {
+      return JSON.parse(localStorage.getItem(this.key)) || {};
+    } catch { return {}; }
+  },
+  
+  save(data) {
+    try { localStorage.setItem(this.key, JSON.stringify(data)); } catch {}
+  },
+  
+  getCardState(id) {
+    const data = this.load();
+    return data[id] || { interval: 0, repetitions: 0, efactor: 2.5, due: 0 };
+  },
+
+  setCardState(id, state) {
+    const data = this.load();
+    data[id] = state;
+    this.save(data);
+  }
+};
+
+// ============================================================
+// APP STATE
+// ============================================================
+const App = {
+  currentDeck: 'all',
+  direction: 'gr',   // 'gr' | 'ru' | 'mix'
+  studyQueue: [],
+  currentIndex: 0,
+  flipped: false,
+  session: { reviewed: 0, correct: 0 },
+
+  getFilteredCards() {
+    const all = getAllCards();
+    if (this.currentDeck === 'all') return all;
+    return all.filter(c => c.deck === this.currentDeck);
+  },
+
+  getDueCards() {
+    const now = Date.now();
+    const all = getAllCards();
+    return this.getFilteredCards().filter((card) => {
+      const key = cardKey(card, all.indexOf(card));
+      const state = Store.getCardState(key);
+      return state.due <= now;
+    });
+  },
+
+  getNewCount() {
+    const all = getAllCards();
+    return this.getFilteredCards().filter((card) => {
+      const key = cardKey(card, all.indexOf(card));
+      const state = Store.getCardState(key);
+      return state.repetitions === 0;
+    }).length;
+  },
+
+  buildQueue() {
+    const now = Date.now();
+    const all = getAllCards();
+    const filtered = this.getFilteredCards();
+    const due = [];
+    filtered.forEach((card) => {
+      const key = cardKey(card, all.indexOf(card));
+      const state = Store.getCardState(key);
+      if (state.due <= now) {
+        let dir = this.direction;
+        if (dir === 'mix') dir = Math.random() < 0.5 ? 'gr' : 'ru';
+        due.push({ card, key, dir });
+      }
+    });
+    // Shuffle
+    for (let i = due.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [due[i], due[j]] = [due[j], due[i]];
+    }
+    return due;
+  },
+
+  updateHomeStats() {
+    const due = this.getDueCards().length;
+    const newCount = this.getNewCount();
+    document.getElementById('stat-due').textContent = due;
+    document.getElementById('stat-new').textContent = newCount;
+    document.getElementById('stat-total').textContent = this.getFilteredCards().length;
+    document.getElementById('btn-study').disabled = due === 0;
+    if (due === 0) document.getElementById('btn-study').textContent = 'Всё повторено ✓';
+    else document.getElementById('btn-study').textContent = 'Учить →';
+  }
+};
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function loadCard() {
+  const { card, dir } = App.studyQueue[App.currentIndex];
+  const total = App.studyQueue.length;
+  const done = App.currentIndex;
+  const showRuFirst = (dir === 'ru');
+
+  // Progress
+  document.getElementById('progress-count').textContent = `${done} / ${total}`;
+  document.getElementById('progress-bar').style.width = `${(done / total) * 100}%`;
+
+  if (showRuFirst) {
+    // Front: Russian → Back: Greek
+    document.getElementById('front-tag').textContent = 'по-русски';
+    document.getElementById('front-word').textContent = card.russian;
+    document.getElementById('front-hint').textContent = '';
+    document.getElementById('back-tag').textContent = 'по-гречески';
+    document.getElementById('back-word').textContent = card.greek;
+    document.getElementById('back-translation').textContent = card.hint || '';
+    document.getElementById('back-example').textContent = card.example || '';
+  } else {
+    // Front: Greek → Back: Russian (default)
+    document.getElementById('front-tag').textContent = 'по-гречески';
+    document.getElementById('front-word').textContent = card.greek;
+    document.getElementById('front-hint').textContent = card.hint || '';
+    document.getElementById('back-tag').textContent = 'перевод';
+    document.getElementById('back-word').textContent = card.greek;
+    document.getElementById('back-translation').textContent = card.russian;
+    document.getElementById('back-example').textContent = card.example || '';
+  }
+
+  // Reset flip
+  App.flipped = false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('show-btn-wrap').style.display = 'flex';
+  document.getElementById('rating-btns').classList.add('hidden');
+
+  // Deck label
+  const deckNames = {
+    greetings: 'Приветствия', nouns: 'Существ.', verbs: 'Глаголы',
+    numbers: 'Числа', food: 'Еда', places: 'Места', phrases: 'Фразы', all: 'Все'
+  };
+  document.getElementById('current-deck-label').textContent = deckNames[App.currentDeck] || 'Все';
+
+  // Preview intervals
+  const key = App.studyQueue[App.currentIndex].key;
+  const state = Store.getCardState(key);
+  [1, 2, 3, 4].forEach(q => {
+    const next = SM2.calculate({ ...state }, q);
+    document.getElementById(`int-${q}`).textContent = SM2.formatInterval(next.interval);
+  });
+
+  // Animate card in
+  const fc = document.getElementById('flashcard');
+  fc.style.animation = 'none';
+  fc.offsetHeight; // reflow
+  fc.style.animation = 'slideIn 0.3s ease';
+}
+
+function flipCard() {
+  if (App.flipped) return;
+  App.flipped = true;
+  document.getElementById('card-inner').classList.add('flipped');
+  document.getElementById('show-btn-wrap').style.display = 'none';
+  document.getElementById('rating-btns').classList.remove('hidden');
+}
+
+function rateCard(quality) {
+  const { key } = App.studyQueue[App.currentIndex];
+  const oldState = Store.getCardState(key);
+  const newState = SM2.calculate({ ...oldState }, quality);
+  Store.setCardState(key, newState);
+
+  App.session.reviewed++;
+  if (quality >= 3) App.session.correct++;
+
+  App.currentIndex++;
+
+  if (App.currentIndex >= App.studyQueue.length) {
+    // Done
+    document.getElementById('done-reviewed').textContent = App.session.reviewed;
+    document.getElementById('done-correct').textContent = App.session.correct;
+    const pct = App.session.reviewed > 0 ? Math.round(App.session.correct / App.session.reviewed * 100) : 0;
+    document.getElementById('done-pct').textContent = pct + '%';
+    showScreen('done');
+  } else {
+    loadCard();
+  }
+}
+
+// ============================================================
+// BROWSE
+// ============================================================
+function renderBrowse(filter = '') {
+  const list = document.getElementById('word-list');
+  const deckNames = {
+    greetings: 'Приветствия', nouns: 'Существ.', verbs: 'Глаголы',
+    numbers: 'Числа', food: 'Еда', places: 'Места', phrases: 'Фразы', custom: '⭐ Мои слова'
+  };
+  const q = filter.toLowerCase();
+  const all = getAllCards();
+  const items = all.filter(c =>
+    c.greek.toLowerCase().includes(q) || c.russian.toLowerCase().includes(q)
+  );
+
+  list.innerHTML = items.map(c => `
+    <div class="word-item">
+      <div style="flex:1;min-width:0;">
+        <div class="word-greek">${c.greek}</div>
+        <div class="word-deck">${deckNames[c.deck] || c.deck}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.25rem;">
+        <div class="word-ru">${c.russian}</div>
+        ${c.custom ? `
+          <div class="word-actions">
+            <button class="btn-edit" data-id="${c.id}" title="Редактировать">✏️</button>
+            <button class="btn-delete" data-id="${c.id}" title="Удалить">×</button>
+          </div>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  // Delete handlers
+  list.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = parseFloat(btn.dataset.id);
+      if (confirm('Удалить это слово?')) {
+        CustomWords.remove(id);
+        renderBrowse(document.getElementById('search-input').value);
+        App.updateHomeStats();
+      }
+    });
+  });
+
+  // Edit handlers
+  list.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = parseFloat(btn.dataset.id);
+      const word = CustomWords.getAll().find(w => w.id === id);
+      if (word) openAddWordScreen(word);
+    });
+  });
+}
+
+// ============================================================
+// ADD WORD SCREEN
+// ============================================================
+function openAddWordScreen(existingWord = null) {
+  CustomWords.editingId = existingWord ? existingWord.id : null;
+  document.getElementById('add-screen-title').textContent = existingWord ? 'Редактировать' : 'Новое слово';
+  document.getElementById('input-greek').value = existingWord ? existingWord.greek : '';
+  document.getElementById('input-russian').value = existingWord ? existingWord.russian : '';
+  document.getElementById('input-hint').value = existingWord ? (existingWord.hint || '') : '';
+  document.getElementById('input-deck').value = existingWord ? existingWord.deck : 'custom';
+  document.getElementById('add-error').style.display = 'none';
+  showScreen('add-word');
+  setTimeout(() => document.getElementById('input-greek').focus(), 300);
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+document.getElementById('btn-add-word').addEventListener('click', () => openAddWordScreen());
+
+document.getElementById('btn-add-back').addEventListener('click', () => showScreen('home'));
+document.getElementById('btn-cancel-add').addEventListener('click', () => showScreen('home'));
+
+document.getElementById('btn-save-word').addEventListener('click', () => {
+  const greek = document.getElementById('input-greek').value.trim();
+  const russian = document.getElementById('input-russian').value.trim();
+  const hint = document.getElementById('input-hint').value.trim();
+  const deck = document.getElementById('input-deck').value;
+  const errEl = document.getElementById('add-error');
+
+  if (!greek || !russian) {
+    errEl.textContent = 'Заполните оба поля — греческое и русское.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  errEl.style.display = 'none';
+
+  if (CustomWords.editingId) {
+    CustomWords.update(CustomWords.editingId, { greek, russian, hint, deck });
+  } else {
+    CustomWords.add({ greek, russian, hint, deck });
+  }
+
+  App.updateHomeStats();
+  showScreen('home');
+});
+
+document.getElementById('deck-select').addEventListener('change', e => {
+  App.currentDeck = e.target.value;
+  App.updateHomeStats();
+});
+
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    App.direction = btn.dataset.dir;
+  });
+});
+
+document.getElementById('btn-study').addEventListener('click', () => {
+  App.studyQueue = App.buildQueue();
+  App.currentIndex = 0;
+  App.session = { reviewed: 0, correct: 0 };
+  if (App.studyQueue.length === 0) return;
+  showScreen('study');
+  loadCard();
+});
+
+document.getElementById('btn-browse').addEventListener('click', () => {
+  renderBrowse();
+  showScreen('browse');
+});
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  showScreen('home');
+  App.updateHomeStats();
+});
+
+document.getElementById('flashcard').addEventListener('click', flipCard);
+
+document.getElementById('btn-show').addEventListener('click', flipCard);
+
+document.querySelectorAll('.btn-rating').forEach(btn => {
+  btn.addEventListener('click', e => {
+    rateCard(parseInt(btn.dataset.rating));
+  });
+});
+
+document.getElementById('btn-done-home').addEventListener('click', () => {
+  showScreen('home');
+  App.updateHomeStats();
+});
+
+document.getElementById('btn-browse-back').addEventListener('click', () => {
+  showScreen('home');
+});
+
+document.getElementById('search-input').addEventListener('input', e => {
+  renderBrowse(e.target.value);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (document.getElementById('study').classList.contains('hidden')) return;
+  if (e.key === ' ' || e.key === 'Enter') flipCard();
+  if (App.flipped) {
+    if (e.key === '1') rateCard(1);
+    if (e.key === '2') rateCard(2);
+    if (e.key === '3') rateCard(3);
+    if (e.key === '4') rateCard(4);
+  }
+});
+
+// ============================================================
+// SUPABASE
+// ============================================================
+const SUPA_URL = 'https://oqubpyoceimwwputhtei.supabase.co';
+const SUPA_KEY = 'sb_publishable__UpDT25FqPFn_dSscchCww_-Hmwpovv';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let currentUser = null;
+
+function showSync(msg) {
+  const el = document.getElementById('sync-badge');
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('visible'), 2500);
+}
+
+// ---- AUTH ----
+async function sendMagicLink() {
+  const email = document.getElementById('login-email').value.trim();
+  const msg = document.getElementById('login-msg');
+  if (!email) { msg.textContent = 'Введите email'; msg.className = 'login-msg error'; return; }
+
+  const btn = document.getElementById('btn-send-link');
+  btn.disabled = true;
+  btn.textContent = 'Отправляем...';
+  msg.textContent = '';
+  msg.className = 'login-msg';
+
+  const { error } = await supa.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Отправить ссылку →';
+
+  if (error) {
+    msg.textContent = 'Ошибка: ' + error.message;
+    msg.className = 'login-msg error';
+  } else {
+    msg.textContent = '✓ Ссылка отправлена! Проверьте почту.';
+    msg.className = 'login-msg success';
+  }
+}
+
+async function signOut() {
+  await supa.auth.signOut();
+  currentUser = null;
+  showScreen('login');
+}
+
+// ---- SYNC: PROGRESS ----
+async function syncProgressToCloud(key, state) {
+  if (!currentUser) return;
+  await supa.from('progress').upsert({
+    user_id: currentUser.id,
+    card_key: key,
+    interval: state.interval,
+    repetitions: state.repetitions,
+    efactor: state.efactor,
+    due: state.due,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,card_key' });
+}
+
+async function loadProgressFromCloud() {
+  if (!currentUser) return;
+  showSync('↓ загружаем прогресс...');
+  const { data, error } = await supa.from('progress').select('*').eq('user_id', currentUser.id);
+  if (error || !data) return;
+  const local = Store.load();
+  data.forEach(row => {
+    // Cloud wins if it's newer
+    const localState = local[row.card_key];
+    if (!localState || row.due > (localState.due || 0)) {
+      local[row.card_key] = {
+        interval: row.interval,
+        repetitions: row.repetitions,
+        efactor: parseFloat(row.efactor),
+        due: row.due
+      };
+    }
+  });
+  Store.save(local);
+  showSync('✓ прогресс загружен');
+}
+
+// ---- SYNC: CUSTOM WORDS ----
+async function loadCustomWordsFromCloud() {
+  if (!currentUser) return;
+  const { data, error } = await supa.from('custom_words').select('*').eq('user_id', currentUser.id);
+  if (error || !data) return;
+  // Replace local custom words with cloud version
+  const words = data.map(row => ({
+    id: row.id,
+    greek: row.greek,
+    russian: row.russian,
+    hint: row.hint || '',
+    deck: row.deck || 'custom',
+    custom: true
+  }));
+  localStorage.setItem(CustomWords.key, JSON.stringify(words));
+}
+
+async function addCustomWordToCloud(word) {
+  if (!currentUser) return null;
+  const { data, error } = await supa.from('custom_words').insert({
+    user_id: currentUser.id,
+    greek: word.greek,
+    russian: word.russian,
+    hint: word.hint || '',
+    deck: word.deck || 'custom'
+  }).select().single();
+  if (error) return null;
+  return data.id; // return cloud UUID
+}
+
+async function updateCustomWordInCloud(id, word) {
+  if (!currentUser) return;
+  await supa.from('custom_words').update({
+    greek: word.greek,
+    russian: word.russian,
+    hint: word.hint || '',
+    deck: word.deck || 'custom'
+  }).eq('id', id).eq('user_id', currentUser.id);
+}
+
+async function deleteCustomWordFromCloud(id) {
+  if (!currentUser) return;
+  await supa.from('custom_words').delete().eq('id', id).eq('user_id', currentUser.id);
+}
+
+// Patch CustomWords to sync with cloud
+const _origAdd = CustomWords.add.bind(CustomWords);
+CustomWords.add = async function(word) {
+  showSync('↑ сохраняем...');
+  const cloudId = await addCustomWordToCloud(word);
+  // Use cloud UUID as ID so it matches
+  if (cloudId) word.id = cloudId;
+  else word.id = Date.now() + Math.random();
+  word.custom = true;
+  const words = this.load();
+  words.push(word);
+  this.save(words);
+  showSync('✓ сохранено');
+  return word;
+};
+
+const _origUpdate = CustomWords.update.bind(CustomWords);
+CustomWords.update = function(id, word) {
+  _origUpdate(id, word);
+  showSync('↑ сохраняем...');
+  updateCustomWordInCloud(id, word).then(() => showSync('✓ сохранено'));
+};
+
+const _origRemove = CustomWords.remove.bind(CustomWords);
+CustomWords.remove = function(id) {
+  _origRemove(id);
+  showSync('↑ удаляем...');
+  deleteCustomWordFromCloud(id).then(() => showSync('✓ удалено'));
+};
+
+// Patch Store.setCardState to sync with cloud
+const _origSetCardState = Store.setCardState.bind(Store);
+Store.setCardState = function(key, state) {
+  _origSetCardState(key, state);
+  syncProgressToCloud(key, state);
+};
+
+// ---- SESSION ----
+async function onSignedIn(user) {
+  currentUser = user;
+  document.getElementById('user-email').textContent = user.email;
+  showSync('↓ синхронизация...');
+  await loadProgressFromCloud();
+  await loadCustomWordsFromCloud();
+  showScreen('home');
+  App.updateHomeStats();
+  showSync('✓ готово');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+// Auth events
+supa.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    await onSignedIn(session.user);
+  } else {
+    currentUser = null;
+    showScreen('login');
+  }
+});
+
+// Check existing session on load
+(async () => {
+  const { data: { session } } = await supa.auth.getSession();
+  if (session?.user) {
+    await onSignedIn(session.user);
+  } else {
+    showScreen('login');
+  }
+})();
+
+// Login form
+document.getElementById('btn-send-link').addEventListener('click', sendMagicLink);
+document.getElementById('login-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendMagicLink();
+});
+document.getElementById('btn-signout').addEventListener('click', signOut);
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
