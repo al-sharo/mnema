@@ -1833,31 +1833,44 @@ async function onSignedIn(user) {
 // INIT
 // ============================================================
 
-// Auth events
+// ---- SESSION INIT ----
+let sessionHandled = false;
+
 supa.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
-    await onSignedIn(session.user);
+    if (!window.navigator.standalone) {
+      // In Safari after an OAuth redirect — show return screen, don't enter app.
+      // Not reachable for Email OTP (OTP always runs inside the PWA).
+      showScreen('oauth-return');
+      return;
+    }
+    if (!sessionHandled) {
+      sessionHandled = true;
+      await onSignedIn(session.user);
+    }
   } else {
+    sessionHandled = false;
     currentUser = null;
     showScreen('login');
   }
 });
 
-// Check existing session on load
 (async () => {
   const { data: { session } } = await supa.auth.getSession();
   if (session?.user) {
-    await onSignedIn(session.user);
+    if (!window.navigator.standalone) {
+      showScreen('oauth-return');
+      return;
+    }
+    if (!sessionHandled) {
+      sessionHandled = true;
+      await onSignedIn(session.user);
+    }
   } else {
     showScreen('login');
   }
 })();
 
-// Login form
-document.getElementById('btn-send-link').addEventListener('click', sendMagicLink);
-document.getElementById('login-email').addEventListener('keydown', e => {
-  if (e.key === 'Enter') sendMagicLink();
-});
 document.getElementById('btn-signout').addEventListener('click', signOut);
 
 // Service Worker
