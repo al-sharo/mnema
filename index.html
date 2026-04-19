@@ -584,6 +584,66 @@
     .login-msg.success { color: var(--good); }
     .login-msg.error { color: #e74c3c; }
 
+    /* OTP digit inputs */
+    .otp-inputs {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .otp-digit {
+      width: 2.8rem;
+      height: 3.2rem;
+      text-align: center;
+      font-size: 1.4rem;
+      font-family: inherit;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      caret-color: var(--accent);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .otp-digit:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(232, 197, 71, 0.2);
+    }
+
+    .otp-resend {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+      min-height: 1.4rem;
+    }
+
+    .otp-resend-timer {
+      font-style: italic;
+    }
+
+    .otp-resend-btn {
+      background: none;
+      border: none;
+      color: var(--accent2);
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      text-decoration: underline;
+    }
+
+    .otp-back-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+    }
+
     /* sync indicator */
     .sync-badge {
       position: fixed;
@@ -731,12 +791,36 @@
   <div class="login-logo">Ελ</div>
   <div>
     <div class="login-title">Ελληνικά Карточки</div>
-    <div class="login-sub">Введите email — мы пришлём<br>ссылку для входа</div>
+    <!-- Two subtitle variants; JS toggles which is visible -->
+    <div class="login-sub" id="login-sub-email">Введите email — мы пришлём<br>6-значный код для входа</div>
+    <div class="login-sub hidden" id="login-sub-code"></div>
   </div>
-  <div class="login-form">
-    <input class="field-input" id="login-email" type="email" placeholder="your@email.com" autocomplete="email">
-    <button class="btn-primary" id="btn-send-link">Отправить ссылку →</button>
+
+  <!-- Panel 1: email input -->
+  <div class="login-form" id="login-panel-email">
+    <input class="field-input" id="login-email" type="email" placeholder="your@email.com"
+           autocomplete="email" inputmode="email">
+    <button class="btn-primary" id="btn-send-otp">Отправить код →</button>
     <div class="login-msg" id="login-msg"></div>
+  </div>
+
+  <!-- Panel 2: code entry (hidden until code is sent) -->
+  <div class="login-form hidden" id="login-panel-code">
+    <div class="otp-inputs" id="otp-inputs">
+      <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input class="otp-digit" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
+    <button class="btn-primary" id="btn-verify-otp">Подтвердить →</button>
+    <div class="login-msg" id="login-msg-code"></div>
+    <div class="otp-resend">
+      <span id="otp-resend-timer" class="otp-resend-timer"></span>
+      <button class="otp-resend-btn hidden" id="btn-resend-otp">Отправить повторно</button>
+    </div>
+    <button class="otp-back-btn" id="btn-back-to-email">← другой email</button>
   </div>
 </div>
 
