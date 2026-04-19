@@ -1761,33 +1761,6 @@ function showSync(msg) {
 }
 
 // ---- AUTH ----
-async function sendMagicLink() {
-  const email = document.getElementById('login-email').value.trim();
-  const msg = document.getElementById('login-msg');
-  if (!email) { msg.textContent = 'Введите email'; msg.className = 'login-msg error'; return; }
-
-  const btn = document.getElementById('btn-send-link');
-  btn.disabled = true;
-  btn.textContent = 'Отправляем...';
-  msg.textContent = '';
-  msg.className = 'login-msg';
-
-  const { error } = await supa.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href }
-  });
-
-  btn.disabled = false;
-  btn.textContent = 'Отправить ссылку →';
-
-  if (error) {
-    msg.textContent = 'Ошибка: ' + error.message;
-    msg.className = 'login-msg error';
-  } else {
-    msg.textContent = '✓ Ссылка отправлена! Проверьте почту.';
-    msg.className = 'login-msg success';
-  }
-}
 
 async function signOut() {
   sessionHandled = false;
