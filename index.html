@@ -1761,6 +1761,139 @@ function showSync(msg) {
 }
 
 // ---- AUTH ----
+let _otpEmail = '';
+let _resendTimer = null;
+
+function startResendTimer(seconds) {
+  const timerEl = document.getElementById('otp-resend-timer');
+  const resendBtn = document.getElementById('btn-resend-otp');
+  resendBtn.classList.add('hidden');
+  let remaining = seconds;
+  timerEl.textContent = `Повторно через ${remaining}с`;
+  clearInterval(_resendTimer);
+  _resendTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(_resendTimer);
+      timerEl.textContent = '';
+      resendBtn.classList.remove('hidden');
+    } else {
+      timerEl.textContent = `Повторно через ${remaining}с`;
+    }
+  }, 1000);
+}
+
+function showOtpCodePanel(email) {
+  _otpEmail = email;
+  document.getElementById('login-panel-email').classList.add('hidden');
+  document.getElementById('login-panel-code').classList.remove('hidden');
+  document.getElementById('login-sub-email').classList.add('hidden');
+  const codeSubEl = document.getElementById('login-sub-code');
+  codeSubEl.classList.remove('hidden');
+  codeSubEl.textContent = `Код отправлен на ${email}`;
+  document.getElementById('login-msg-code').textContent = '';
+  document.getElementById('login-msg-code').className = 'login-msg';
+  document.querySelectorAll('.otp-digit').forEach(el => { el.value = ''; });
+  document.querySelector('.otp-digit').focus();
+  startResendTimer(45);
+}
+
+function showEmailPanel() {
+  _otpEmail = '';
+  clearInterval(_resendTimer);
+  document.getElementById('login-panel-code').classList.add('hidden');
+  document.getElementById('login-panel-email').classList.remove('hidden');
+  document.getElementById('login-sub-code').classList.add('hidden');
+  document.getElementById('login-sub-email').classList.remove('hidden');
+  document.getElementById('login-msg').textContent = '';
+  document.getElementById('login-msg').className = 'login-msg';
+}
+
+async function sendEmailOtp(email) {
+  const msg = document.getElementById('login-msg');
+  if (!email) { msg.textContent = 'Введите email'; msg.className = 'login-msg error'; return; }
+
+  const btn = document.getElementById('btn-send-otp');
+  btn.disabled = true;
+  btn.textContent = 'Отправляем...';
+  msg.textContent = '';
+
+  const { error } = await supa.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true }
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Отправить код →';
+
+  if (error) {
+    msg.textContent = 'Ошибка: ' + error.message;
+    msg.className = 'login-msg error';
+  } else {
+    showOtpCodePanel(email);
+  }
+}
+
+async function verifyEmailOtp() {
+  const token = Array.from(document.querySelectorAll('.otp-digit'))
+    .map(el => el.value.trim())
+    .join('');
+  const msg = document.getElementById('login-msg-code');
+
+  if (token.length !== 6) {
+    msg.textContent = 'Введите все 6 цифр';
+    msg.className = 'login-msg error';
+    return;
+  }
+
+  const btn = document.getElementById('btn-verify-otp');
+  btn.disabled = true;
+  btn.textContent = 'Проверяем...';
+  msg.textContent = '';
+
+  const { error } = await supa.auth.verifyOtp({
+    email: _otpEmail,
+    token,
+    type: 'email'
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Подтвердить →';
+
+  if (error) {
+    msg.textContent = 'Неверный код. Попробуйте ещё раз.';
+    msg.className = 'login-msg error';
+  }
+  // On success: onAuthStateChange fires → onSignedIn() called
+}
+
+// OTP digit keyboard UX: auto-advance, backspace goes back, paste fills all
+function initOtpInputs() {
+  const digits = Array.from(document.querySelectorAll('.otp-digit'));
+
+  digits.forEach((el, i) => {
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/\D/g, '').slice(-1);
+      if (el.value && i < digits.length - 1) digits[i + 1].focus();
+    });
+
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !el.value && i > 0) digits[i - 1].focus();
+      if (e.key === 'Enter') verifyEmailOtp();
+    });
+  });
+
+  // Paste: fill all digits from clipboard
+  digits[0].addEventListener('paste', e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+    digits.forEach((el, i) => { el.value = text[i] || ''; });
+    const lastFilled = Math.min(text.length, digits.length) - 1;
+    if (lastFilled >= 0) digits[lastFilled].focus();
+  });
+}
+
+initOtpInputs();
 
 async function signOut() {
   sessionHandled = false;
@@ -1943,6 +2076,19 @@ supa.auth.onAuthStateChange(async (event, session) => {
 })();
 
 document.getElementById('btn-signout').addEventListener('click', signOut);
+
+// Email OTP login form
+document.getElementById('btn-send-otp').addEventListener('click', () => {
+  sendEmailOtp(document.getElementById('login-email').value.trim());
+});
+document.getElementById('login-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendEmailOtp(document.getElementById('login-email').value.trim());
+});
+document.getElementById('btn-verify-otp').addEventListener('click', verifyEmailOtp);
+document.getElementById('btn-resend-otp').addEventListener('click', () => {
+  sendEmailOtp(_otpEmail);
+});
+document.getElementById('btn-back-to-email').addEventListener('click', showEmailPanel);
 
 // Service Worker
 if ('serviceWorker' in navigator) {
