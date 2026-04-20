@@ -1809,10 +1809,14 @@ function showEmailPanel() {
   document.getElementById('login-msg').className = 'login-msg';
 }
 
+let _otpSending = false;
+
 async function sendEmailOtp(email) {
+  if (_otpSending) return;
   const msg = document.getElementById('login-msg');
   if (!email) { msg.textContent = 'Введите email'; msg.className = 'login-msg error'; return; }
 
+  _otpSending = true;
   const btn = document.getElementById('btn-send-otp');
   btn.disabled = true;
   btn.textContent = 'Отправляем...';
@@ -1823,6 +1827,7 @@ async function sendEmailOtp(email) {
     options: { shouldCreateUser: true }
   });
 
+  _otpSending = false;
   btn.disabled = false;
   btn.textContent = 'Отправить код →';
 
@@ -1835,6 +1840,7 @@ async function sendEmailOtp(email) {
 }
 
 async function verifyEmailOtp() {
+  if (!_otpEmail) return;
   const token = Array.from(document.querySelectorAll('.otp-digit'))
     .map(el => el.value.trim())
     .join('');
@@ -1883,13 +1889,15 @@ function initOtpInputs() {
     });
   });
 
-  // Paste: fill all digits from clipboard
-  digits[0].addEventListener('paste', e => {
-    e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
-    digits.forEach((el, i) => { el.value = text[i] || ''; });
-    const lastFilled = Math.min(text.length, digits.length) - 1;
-    if (lastFilled >= 0) digits[lastFilled].focus();
+  // Paste on any digit: distribute all digits from clipboard
+  digits.forEach(el => {
+    el.addEventListener('paste', e => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      digits.forEach((d, i) => { d.value = text[i] || ''; });
+      const lastFilled = Math.min(text.length, digits.length) - 1;
+      if (lastFilled >= 0) digits[lastFilled].focus();
+    });
   });
 }
 
