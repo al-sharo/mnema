@@ -1810,6 +1810,7 @@ function showEmailPanel() {
 }
 
 let _otpSending = false;
+let _otpVerifying = false;
 
 async function sendEmailOtp(email) {
   if (_otpSending) return;
@@ -1857,6 +1858,7 @@ async function verifyEmailOtp() {
   btn.textContent = 'Проверяем...';
   msg.textContent = '';
 
+  _otpVerifying = true;
   const { error } = await supa.auth.verifyOtp({
     email: _otpEmail,
     token,
@@ -1867,6 +1869,7 @@ async function verifyEmailOtp() {
   btn.textContent = 'Подтвердить →';
 
   if (error) {
+    _otpVerifying = false;
     msg.textContent = 'Неверный код. Попробуйте ещё раз.';
     msg.className = 'login-msg error';
   }
@@ -2049,13 +2052,13 @@ let sessionHandled = false;
 
 supa.auth.onAuthStateChange(async (event, session) => {
   if (session?.user) {
-    if (event === 'SIGNED_IN' && !window.navigator.standalone) {
+    if (event === 'SIGNED_IN' && !window.navigator.standalone && !_otpVerifying) {
       // In Safari after an OAuth redirect — show return screen, don't enter app.
-      // Scoped to SIGNED_IN so TOKEN_REFRESHED events don't trigger this path.
-      // Not reachable for Email OTP (OTP always runs inside the PWA).
+      // Skipped when OTP was verified in-app (_otpVerifying flag).
       showScreen('oauth-return');
       return;
     }
+    _otpVerifying = false;
     if (!sessionHandled) {
       sessionHandled = true;
       await onSignedIn(session.user);
